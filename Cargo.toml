@@ -1,0 +1,11 @@
+[package]
+name = "rtf2text"
+version = "0.1.0"
+authors = ["Will Page <compenguy@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+log = "0.3"
+loggerv = "0.4.0"
+clap = "2.25.1"
+rtf-grimoire = { git = "https://github.com/compenguy/rtf-grimoire.git" }
