@@ -7,5 +7,8 @@ edition = "2018"
 [dependencies]
 log = "0.3"
 loggerv = "0.4.0"
+lazy_static = "1.2.0"
 clap = "2.25.1"
 rtf-grimoire = { git = "https://github.com/compenguy/rtf-grimoire.git" }
+codepage = "0.1.1"
+encoding_rs = "0.8.16"

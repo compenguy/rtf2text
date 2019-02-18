@@ -1,15 +1,18 @@
 #[macro_use]
-extern crate clap;
-
-#[macro_use]
 extern crate log;
 
+#[macro_use]
+extern crate lazy_static;
+
+#[macro_use]
+extern crate clap;
+
 mod error;
-mod repr;
+mod rtf_control;
 mod rtftotext;
 
 use std::error::Error;
-use std::{fs, io, path, process};
+use std::{fs, io, path};
 
 fn main() {
     let app = app_from_crate!("")
@@ -46,7 +49,7 @@ fn main() {
         .is_none()
     {
         eprintln!("{}", matches.usage());
-        process::exit(255);
+        std::process::exit(255);
     }
 
     if let Err(e) = convert(
@@ -57,7 +60,7 @@ fn main() {
         if let Some(inner) = e.source() {
             eprintln!("Cause: {}", inner);
         }
-        process::exit(e.code());
+        std::process::exit(e.code());
     }
 }
 
@@ -65,7 +68,15 @@ fn make_input_reader(infile: Option<&str>) -> error::Result<io::BufReader<Box<io
     let inpath = infile.map(path::PathBuf::from);
     let reader = io::BufReader::new(match inpath {
         Some(path) => {
-            Box::new(fs::File::open(path).map_err(error::Error::from_input_error)?) as Box<io::Read>
+            debug!("Opening {} for read...", path.to_str().unwrap_or(""));
+            let file = fs::File::open(path.clone());
+            if let Err(e) = file {
+                error!("ERROR: {}", e);
+                return Err(error::Error::from_input_error(e));
+            } else {
+                Box::new(fs::File::open(path).map_err(error::Error::from_input_error)?)
+                    as Box<io::Read>
+            }
         }
         None => Box::new(io::stdin()) as Box<io::Read>,
     });
@@ -75,8 +86,11 @@ fn make_input_reader(infile: Option<&str>) -> error::Result<io::BufReader<Box<io
 fn make_output_writer(outfile: Option<&str>) -> error::Result<io::BufWriter<Box<io::Write>>> {
     let outpath = outfile.map(path::PathBuf::from);
     let writer = io::BufWriter::new(match outpath {
-        Some(path) => Box::new(fs::File::create(path).map_err(error::Error::from_output_error)?)
-            as Box<io::Write>,
+        Some(path) => {
+            debug!("Opening {} for write...", path.to_str().unwrap_or(""));
+            Box::new(fs::File::create(path).map_err(error::Error::from_output_error)?)
+                as Box<io::Write>
+        }
         None => Box::new(io::stdout()) as Box<io::Write>,
     });
     Ok(writer)
@@ -85,5 +99,15 @@ fn make_output_writer(outfile: Option<&str>) -> error::Result<io::BufWriter<Box<
 fn convert(infile: Option<&str>, outfile: Option<&str>) -> error::Result<()> {
     let reader = make_input_reader(infile)?;
     let writer = make_output_writer(outfile)?;
+    if let Some(inpath) = infile {
+        debug!("Parsing {} as rtf.", inpath);
+    } else {
+        debug!("Parsing <stdin> as rtf.");
+    }
+    if let Some(outpath) = outfile {
+        debug!("Writing parsed text to {}.", outpath);
+    } else {
+        debug!("Writing parsed text to <stdout>.");
+    }
     rtftotext::parse(reader, writer)
 }
