@@ -45,7 +45,7 @@ fn main() {
 
     if matches
         .value_of("input-file")
-        .or(matches.value_of("output-file"))
+        .or_else(|| matches.value_of("output-file"))
         .is_none()
     {
         eprintln!("{}", matches.usage());

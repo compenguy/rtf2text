@@ -9,8 +9,6 @@ use rtf_grimoire::tokenizer::Token;
 use crate::error::{Error, ErrorKind, Result};
 use crate::rtf_control;
 
-/* TODO: Make destinations into a struct or enum, instead of unadorned data */
-
 #[derive(Clone)]
 pub enum Destination {
     Text(String),
@@ -18,24 +16,26 @@ pub enum Destination {
 }
 
 impl Destination {
-    fn get_text(&self) -> Option<&String> {
+    fn as_bytes(&self) -> &[u8] {
         match self {
-            Destination::Text(string) => Some(string),
-            _ => None,
+            Destination::Text(text) => text.as_bytes(),
+            Destination::Bytes(bytes) => &bytes,
         }
     }
 
-    fn get_bytes(&self) -> Option<&Vec<u8>> {
-        match self {
-            Destination::Bytes(bytes) => Some(bytes),
-            _ => None,
+    fn append_text(&mut self, new_text: &str) {
+        if let Destination::Text(string) = self {
+            string.push_str(new_text);
+        } else {
+            panic!("Programmer error: attempting to add text to a byte destination");
         }
     }
 
-    fn get_length(&self) -> usize {
-        match self {
-            Destination::Bytes(bytes) => bytes.len(),
-            Destination::Text(string) => string.len(),
+    fn append_bytes(&mut self, new_bytes: &[u8]) {
+        if let Destination::Bytes(bytes) = self {
+            bytes.extend(new_bytes);
+        } else {
+            panic!("Programmer error: attempting to add bytes to a text destination");
         }
     }
 }
@@ -52,9 +52,7 @@ pub struct GroupState {
 }
 
 impl GroupState {
-    pub fn new(
-        destinations: Rc<RefCell<HashMap<String, Destination>>>,
-    ) -> Self {
+    pub fn new(destinations: Rc<RefCell<HashMap<String, Destination>>>) -> Self {
         Self {
             destinations,
             cur_destination: None,
@@ -74,35 +72,36 @@ impl GroupState {
         let mut dest = (*self.destinations).borrow_mut();
         match dest.get(name) {
             Some(Destination::Text(string)) => {
-                debug!("Switching to destination {}, with current length {})", name, string.len());
+                debug!(
+                    "Switching to destination {}, with current length {})",
+                    name,
+                    string.len()
+                );
                 assert!(uses_encoding);
-            },
+            }
             Some(Destination::Bytes(bytes)) => {
-                debug!("Switching to destination {}, with current length {})", name, bytes.len());
+                debug!(
+                    "Switching to destination {}, with current length {})",
+                    name,
+                    bytes.len()
+                );
                 assert!(!uses_encoding);
-            },
+            }
             None => {
                 if uses_encoding {
-                    dest.insert(name.to_string(), Destination::Text(String::with_capacity(256)));
+                    dest.insert(
+                        name.to_string(),
+                        Destination::Text(String::with_capacity(256)),
+                    );
                 } else {
                     dest.insert(name.to_string(), Destination::Bytes(Vec::new()));
                 }
-            },
+            }
         }
     }
 
     pub fn get_destination_name(&self) -> Option<String> {
-        return self.cur_destination.clone()
-    }
-
-    pub fn get_destination(&self) -> Option<Destination> {
-        if let Some(name) = self.get_destination_name() {
-            let dest = (*self.destinations).borrow_mut();
-            let value: Option<Destination> = dest.get(&name).map(|x| (*x).clone());
-            value
-        } else {
-            None
-        }
+        self.cur_destination.clone()
     }
 
     pub fn write(&mut self, bytes: &[u8]) {
@@ -114,32 +113,24 @@ impl GroupState {
                     bytes
                 );
                 return;
-            },
-        };
-        let mut dest = self.get_destination()
-            .expect("");
-        match dest {
-            Destination::Text(ref mut dest_text) => {
-                if let Some(ref mut decoder) = self.dest_encoding {
-                    let (new_text, _, _) = decoder.decode(bytes);
-                    // debug!("Writing text to destination {}, current length: {}", dest_name, dest_text.len());
-                    // debug!("\n###\n{}\n###", new_text);
-                    dest_text.push_str(&new_text);
-                    // debug!("New destination length: {}", dest_text.len());
-                    if dest_name == "rtf" {
-                        print!("{}", new_text);
-                    }
-                } else {
-                    error!("Writing to a text destination ({}) with no encoding set!", dest_name);
-                }
-            },
-            Destination::Bytes(ref mut dest_bytes) => {
-                /*
-                debug!("Writing bytes to destination {}", dest_name);
-                debug!("\n###\n{:?}\n###", bytes);
-                */
-                dest_bytes.extend(bytes);
             }
+        };
+        if let Some(dest) = (*self.destinations).borrow_mut().get_mut(&dest_name) {
+            match dest {
+                Destination::Text(_) => {
+                    if let Some(ref mut decoder) = self.dest_encoding {
+                        dest.append_text(&decoder.decode(bytes).0);
+                    } else {
+                        error!(
+                            "Writing to a text destination ({}) with no encoding set!",
+                            dest_name
+                        );
+                    }
+                }
+                Destination::Bytes(_) => dest.append_bytes(bytes),
+            }
+        } else {
+            panic!("Programming error: specified destination {} doesn't exist after verifying its existence", dest_name);
         }
     }
 
@@ -188,8 +179,6 @@ impl State {
         let mut sym_bytes = [0; 4];
         let sym_str = symbol.encode_utf8(&mut sym_bytes);
         if let Some(mut group_state) = self.get_last_group_mut() {
-            // debug!("processing control symbol {}({})", symbol, sym_str);
-            // match rtf_control::SYMBOLS.get(sym_str) { Some(_) => debug!("\tin SYMBOLS lookup table"), _ => (), }
             if let Some(symbol_handler) = rtf_control::SYMBOLS.get(sym_str) {
                 symbol_handler(&mut group_state, sym_str, None);
             } else if word_is_optional {
@@ -207,12 +196,6 @@ impl State {
 
     fn do_control_word(&mut self, name: &str, arg: Option<i32>, word_is_optional: bool) {
         if let Some(mut group_state) = self.get_last_group_mut() {
-            // debug!("processing control word {}", name);
-            // match rtf_control::DESTINATIONS.get(name) { Some(_) => debug!("\tin DESTINATIONS lookup table"), _ => (), }
-            // match rtf_control::SYMBOLS.get(name) { Some(_) => debug!("\tin SYMBOLS lookup table"), _ => (), }
-            // match rtf_control::VALUES.get(name) { Some(_) => debug!("\tin VALUES lookup table"), _ => (), }
-            // match rtf_control::FLAGS.get(name) { Some(_) => debug!("\tin FLAGS lookup table"), _ => (), }
-            // match rtf_control::TOGGLES.get(name) { Some(_) => debug!("\tin TOGGLES lookup table"), _ => (), }
             if let Some(dest_handler) = rtf_control::DESTINATIONS.get(name) {
                 dest_handler(&mut group_state, name, arg);
             } else if let Some(symbol_handler) = rtf_control::SYMBOLS.get(name) {
@@ -250,28 +233,17 @@ impl State {
 
     fn start_group(&mut self) {
         if let Some(last_group) = self.get_last_group() {
-            // debug!("Starting group {}:", self.group_stack.len() + 1);
-            // debug!("\n### START FLAGS \n{:?}\n### END FLAGS", last_group.flags);
-            // debug!("\n### START VALUES \n{:?}\n### END VALUES", last_group.values);
             self.group_stack.push(last_group.clone());
         } else {
             debug!("Creating initial group...");
-            self.group_stack.push(
-                GroupState::new(
-                    self.destinations.clone(),
-                )
-            );
+            self.group_stack
+                .push(GroupState::new(self.destinations.clone()));
         }
     }
 
     fn end_group(&mut self) {
-        if let None = self.group_stack.pop() {
+        if self.group_stack.pop().is_none() {
             error!("Document format error: End group count exceeds number start groups");
-        }
-        if let Some(group) = self.get_last_group() {
-            debug!("Switching to destination {}, with current length {})",
-                group.get_destination_name().unwrap_or("None".to_owned()),
-                group.get_destination().map(|dest| dest.get_length()).unwrap_or(0usize));
         }
     }
 
@@ -321,22 +293,15 @@ fn write_token_stream<W: Write>(mut writer: W, token_stream: &[Token]) -> Result
 
     debug!("Iterating over token stream.");
     for token in token_stream.iter().filter(|c| c != &&Token::Newline) {
-        //debug!("\tToken: {:?}", token);
         state.process_token(token);
     }
     debug!("Finished token stream iteration.");
 
     if let Some(dest) = (*state.destinations).borrow().get("rtf") {
-        match dest {
-            Destination::Text(string) => {
-                debug!("Writing rtf1 text content...");
-                writer.write(string.as_bytes()).map_err(Error::from_output_error)?;
-            },
-            Destination::Bytes(bytes) => {
-                debug!("Writing rtf1 byte content...");
-                writer.write(bytes).map_err(Error::from_output_error)?;
-            },
-        }
+        debug!("Writing rtf1 content...");
+        writer
+            .write(dest.as_bytes())
+            .map_err(Error::from_output_error)?;
     }
     Ok(())
 }

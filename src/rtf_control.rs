@@ -1517,7 +1517,7 @@ fn control_symbol_write_ansi_char(state: &mut GroupState, name: &str, arg: Optio
         "tab" => Some(b"\t"),
         "\n" => Some(b"\n"), // Semi-official compatibility mapping, same as \par
         "\r" => Some(b"\n"), // Semi-official compatibility mapping, same as \par
-        "\t" => Some(b"\t"),   // Semi-official compatibility mapping
+        "\t" => Some(b"\t"), // Semi-official compatibility mapping
         _ => {
             error!("Unsupported ANSI char mapping requested: {}", name);
             None
