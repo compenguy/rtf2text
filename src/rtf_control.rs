@@ -2,9 +2,11 @@ use crate::rtftotext::GroupState;
 
 use std::collections::HashMap;
 
+type StateHandler = dyn Fn(&mut GroupState, &str, Option<i32>) + 'static + Sync;
+
 lazy_static! {
-    pub static ref DESTINATIONS: HashMap<&'static str, Box<dyn Fn(&mut GroupState, &str, Option<i32>) + 'static + Sync>> = {
-        let mut m = HashMap::<_, Box<dyn Fn(&mut GroupState, &str, Option<i32>) + 'static + Sync>>::new();
+    pub static ref DESTINATIONS: HashMap<&'static str, Box<StateHandler>> = {
+        let mut m = HashMap::<_, Box<StateHandler>>::new();
         m.insert("aftncn", Box::new(destination_control_set_state_default));
         m.insert("aftnsep", Box::new(destination_control_set_state_default));
         m.insert("aftnsepc", Box::new(destination_control_set_state_default));
@@ -138,8 +140,8 @@ lazy_static! {
         m
     };
 
-    pub static ref SYMBOLS: HashMap<&'static str, Box<dyn Fn(&mut GroupState, &str, Option<i32>) + 'static + Sync>> = {
-        let mut m = HashMap::<_, Box<dyn Fn(&mut GroupState, &str, Option<i32>) + 'static + Sync>>::new();
+    pub static ref SYMBOLS: HashMap<&'static str, Box<StateHandler>> = {
+        let mut m = HashMap::<_, Box<StateHandler>>::new();
         m.insert("'", Box::new(control_symbol_write_ansi_char));
         m.insert("-", Box::new(control_word_ignore));
         m.insert("*", Box::new(control_symbol_next_control_is_optional));
@@ -192,8 +194,8 @@ lazy_static! {
         m
     };
 
-    pub static ref FLAGS: HashMap<&'static str, Box<dyn Fn(&mut GroupState, &str, Option<i32>) + 'static + Sync>> = {
-        let mut m = HashMap::<_, Box<dyn Fn(&mut GroupState, &str, Option<i32>) + 'static + Sync>>::new();
+    pub static ref FLAGS: HashMap<&'static str, Box<StateHandler>> = {
+        let mut m = HashMap::<_, Box<StateHandler>>::new();
         m.insert("abslock", Box::new(control_flag_set_state_default));
         m.insert("additive", Box::new(control_flag_set_state_default));
         m.insert("adjustright", Box::new(control_flag_set_state_default));
@@ -954,8 +956,8 @@ lazy_static! {
         m
     };
 
-    pub static ref TOGGLES: HashMap<&'static str, Box<dyn Fn(&mut GroupState, &str, Option<i32>) + 'static + Sync>> = {
-        let mut m = HashMap::<_, Box<dyn Fn(&mut GroupState, &str, Option<i32>) + 'static + Sync>>::new();
+    pub static ref TOGGLES: HashMap<&'static str, Box<StateHandler>> = {
+        let mut m = HashMap::<_, Box<StateHandler>>::new();
         m.insert("aoutl", Box::new(control_toggle_set_state_default));
         m.insert("ascaps", Box::new(control_toggle_set_state_default));
         m.insert("ashad", Box::new(control_toggle_set_state_default));
@@ -1013,8 +1015,8 @@ lazy_static! {
         m
     };
 
-    pub static ref VALUES: HashMap<&'static str, Box<dyn Fn(&mut GroupState, &str, Option<i32>) + 'static + Sync>> = {
-        let mut m = HashMap::<_, Box<dyn Fn(&mut GroupState, &str, Option<i32>) + 'static + Sync>>::new();
+    pub static ref VALUES: HashMap<&'static str, Box<StateHandler>> = {
+        let mut m = HashMap::<_, Box<StateHandler>>::new();
         m.insert("absh", Box::new(control_value_set_state_default));
         m.insert("absw", Box::new(control_value_set_state_default));
         m.insert("acf", Box::new(control_value_set_state_default));
