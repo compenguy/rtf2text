@@ -1169,7 +1169,7 @@ lazy_static! {
         m.insert("trhdr", Box::new(control_value_set_state_default));
         m.insert("trkeep", Box::new(control_value_set_state_default));
         m.insert("trkeepfollow", Box::new(control_value_set_state_default));
-        m.insert("trowd", Box::new(control_value_set_state_and_write_ansi_char));
+        m.insert("trowd", Box::new(control_value_set_state_default));
         m.insert("trqc", Box::new(control_value_set_state_default));
         m.insert("trql", Box::new(control_value_set_state_default));
         m.insert("trqr", Box::new(control_value_set_state_default));
@@ -1906,7 +1906,11 @@ fn control_word_ignore(_state: &mut GroupState, name: &str, _arg: Option<i32>) {
     trace!("Ignoring control word {}", name);
 }
 
-fn control_value_set_state_and_write_ansi_char(state: &mut GroupState, name: &str, arg: Option<i32>) {
+fn control_value_set_state_and_write_ansi_char(
+    state: &mut GroupState,
+    name: &str,
+    arg: Option<i32>,
+) {
     let encoding = state.get_encoding();
     control_symbol_write_ansi_char(state, name, arg);
     control_value_set_state_encoding(state, "ansicpg", Some(1252));
@@ -1919,7 +1923,7 @@ fn control_symbol_write_ansi_char(state: &mut GroupState, name: &str, arg: Optio
         "'" => {
             debug!("control symbol: ansi byte {:?}", arg_byte);
             Some(&arg_byte) // ANSI hex escape
-        },
+        }
         "\\" => Some(b"\\"),
         "_" => Some(b"-"), // Non-breaking hyphen
         "{" => Some(b"{"),
@@ -1939,13 +1943,12 @@ fn control_symbol_write_ansi_char(state: &mut GroupState, name: &str, arg: Optio
         "rquote" => Some(b"\x92"),    // Pre-defined ANSI mapping in spec
         "sect" => Some(b"\n\n"),
         "tab" => Some(b"\t"),
-        "row" => Some(b"\n| "), // Unofficial mapping for ending a table row
-        "trowd" => Some(b"| "), // Unofficial mapping for starting a table row
-        "cell" => Some(b"\t| "), // Unofficial mapping for separating table row cells
+        "row" => Some(b"\n "),  // Unofficial mapping for ending a table row
+        "cell" => Some(b"\t"),  // Unofficial mapping for separating table row cells
         "ls" => Some(b"\x95 "), // Unofficial mapping for list entry
-        "\n" => Some(b"\n"), // Semi-official compatibility mapping, same as \par
-        "\r" => Some(b"\n"), // Semi-official compatibility mapping, same as \par
-        "\t" => Some(b"\t"), // Semi-official compatibility mapping
+        "\n" => Some(b"\n"),    // Semi-official compatibility mapping, same as \par
+        "\r" => Some(b"\n"),    // Semi-official compatibility mapping, same as \par
+        "\t" => Some(b"\t"),    // Semi-official compatibility mapping
         _ => {
             error!("Unsupported ANSI char mapping requested: {}", name);
             None
@@ -1969,7 +1972,11 @@ fn destination_control_set_state_default(state: &mut GroupState, name: &str, _ar
     state.set_destination(name, false);
 }
 
-fn destination_control_and_value_set_state_default(state: &mut GroupState, name: &str, arg: Option<i32>) {
+fn destination_control_and_value_set_state_default(
+    state: &mut GroupState,
+    name: &str,
+    arg: Option<i32>,
+) {
     state.set_destination(name, false);
     state.set_value(name, arg);
 }

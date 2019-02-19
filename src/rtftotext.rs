@@ -40,7 +40,9 @@ impl Destination {
     }
 }
 
-/* TODO: It would be better to make 'flags' and 'values' CoW objects */
+/* TODO: It would be better to make 'values' CoW objects to reduce the number of copies we
+ * make/keep
+ */
 #[derive(Clone)]
 pub struct GroupState {
     destinations: Rc<RefCell<HashMap<String, Destination>>>,
@@ -156,12 +158,12 @@ impl GroupState {
 }
 
 #[derive(Clone)]
-struct State {
+struct DocumentState {
     destinations: Rc<RefCell<HashMap<String, Destination>>>,
     group_stack: Vec<GroupState>,
 }
 
-impl State {
+impl DocumentState {
     fn new() -> Self {
         Self {
             destinations: Rc::new(RefCell::new(HashMap::new())),
@@ -240,7 +242,9 @@ impl State {
     }
 
     fn end_group(&mut self) {
-        if self.group_stack.pop().is_none() {
+        if let Some(_group) = self.group_stack.pop() {
+            // TODO: destination-folding support (tables, etc)
+        } else {
             error!("Document format error: End group count exceeds number start groups");
         }
     }
@@ -272,7 +276,7 @@ impl State {
     }
 }
 
-pub fn parse<R: Read, W: Write>(mut reader: R, writer: W) -> Result<()> {
+pub fn tokenize<R: Read>(mut reader: R) -> Result<Vec<Token>> {
     let mut data: Vec<u8> = Vec::with_capacity(4096);
     debug!("Reading all data from input.");
     reader
@@ -280,14 +284,11 @@ pub fn parse<R: Read, W: Write>(mut reader: R, writer: W) -> Result<()> {
         .map_err(Error::from_input_error)?;
 
     debug!("Parsing into token stream.");
-    let token_stream =
-        parse_tokens(&data).map_err(|e| Error::new(ErrorKind::Parse, None, Some(Box::new(e))))?;
-
-    write_token_stream(writer, &token_stream)
+    parse_tokens(&data).map_err(|e| Error::new(ErrorKind::Parse, None, Some(Box::new(e))))
 }
 
-fn write_token_stream<W: Write>(mut writer: W, token_stream: &[Token]) -> Result<()> {
-    let mut state = State::new();
+pub fn write_plaintext<W: Write>(token_stream: &[Token], mut writer: W) -> Result<()> {
+    let mut state = DocumentState::new();
 
     debug!("Iterating over token stream.");
     for token in token_stream.iter().filter(|c| c != &&Token::Newline) {

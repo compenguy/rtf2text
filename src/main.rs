@@ -109,5 +109,6 @@ fn convert(infile: Option<&str>, outfile: Option<&str>) -> error::Result<()> {
     } else {
         debug!("Writing parsed text to <stdout>.");
     }
-    rtftotext::parse(reader, writer)
+    let tokens = rtftotext::tokenize(reader)?;
+    rtftotext::write_plaintext(&tokens, writer)
 }
