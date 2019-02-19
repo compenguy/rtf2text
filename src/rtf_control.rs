@@ -2012,8 +2012,8 @@ fn control_symbol_write_ansi_char(state: &mut GroupState, name: &str, arg: Optio
         "\n" => Some(b"\n"),    // Semi-official compatibility mapping, same as \par
         "\r" => Some(b"\n"),    // Semi-official compatibility mapping, same as \par
         "\t" => Some(b"\t"),    // Semi-official compatibility mapping
-        " " => Some(b" "),    // Semi-official compatibility mapping
-        "/" => Some(b"/"),    // Unsupported, but used symbol mapping
+        " " => Some(b" "),      // Semi-official compatibility mapping
+        "/" => Some(b"/"),      // Unsupported, but used symbol mapping
         _ => {
             error!("Unsupported ANSI char mapping requested: {}", name);
             None

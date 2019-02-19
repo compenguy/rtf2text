@@ -116,7 +116,7 @@ impl GroupState {
         let dest_name = match self.get_destination_name() {
             Some(name) => name.clone(),
             None => {
-                error!(
+                warn!(
                     "Document format error: Document text found outside of any document group: '{:?}'",
                     bytes
                 );
@@ -129,7 +129,7 @@ impl GroupState {
                     if let Some(ref mut decoder) = self.dest_encoding {
                         dest.append_text(&decoder.decode(bytes).0);
                     } else {
-                        error!(
+                        warn!(
                             "Writing to a text destination ({}) with no encoding set!",
                             dest_name
                         );
@@ -184,11 +184,14 @@ impl DocumentState {
             } else if word_is_optional {
                 info!("Skipping optional unsupported control word \\{}", symbol);
             } else {
-                warn!("Unsupported/illegal control symbol \\{} (writing to document anyway)", symbol);
+                warn!(
+                    "Unsupported/illegal control symbol \\{} (writing to document anyway)",
+                    symbol
+                );
                 self.write_to_current_destination(format!("{}", symbol).as_bytes());
             }
         } else {
-            error!(
+            warn!(
                 "Document format error: Control symbol found outside of any document group: '\\{}'",
                 symbol
             );
@@ -210,10 +213,10 @@ impl DocumentState {
             } else if word_is_optional {
                 warn!("Skipping optional unsupported control word \\{}", name);
             } else {
-                error!("Unsupported/illegal control word \\{}", name);
+                warn!("Unsupported/illegal control word \\{}", name);
             }
         } else {
-            error!(
+            warn!(
                 "Document format error: Control word found outside of any document group: '\\{}'",
                 name
             );
@@ -225,7 +228,7 @@ impl DocumentState {
             group.write(bytes);
         } else {
             // it is a fundamental document formatting error for text to appear outside of the {\rtf1 } group
-            error!(
+            warn!(
                 "Document format error: Document text found outside of any document group: '{:?}'",
                 bytes
             );
