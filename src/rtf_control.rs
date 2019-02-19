@@ -310,6 +310,16 @@ lazy_static! {
         m.insert("xmlname", Box::new(destination_control_set_state_default));
         m.insert("xmlnstbl", Box::new(destination_control_set_state_default));
         m.insert("xmlopen", Box::new(destination_control_set_state_default));
+        // These are unofficial destinations used by the macOS CocoaRTF export filter
+        // https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/AttributedStrings/Tasks/RTFAndAttrStrings.html
+        m.insert("NeXTGraphic", Box::new(destination_control_set_state_default));
+        m.insert("glid", Box::new(destination_control_and_value_set_state_default));
+        m.insert("levelmarker", Box::new(destination_control_set_state_default));
+        // These are unofficial destinations used by OpenOffice RTF export filter
+        m.insert("hyphen", Box::new(destination_control_and_value_set_state_default));
+        m.insert("pgdsc", Box::new(destination_control_and_value_set_state_default));
+        m.insert("pgdscno", Box::new(destination_control_and_value_set_state_default));
+        m.insert("pgdsctbl", Box::new(destination_control_set_state_default));
         m
     };
 
@@ -361,10 +371,16 @@ lazy_static! {
         m.insert("zwj", Box::new(control_word_ignore));
         m.insert("zwnbo", Box::new(control_word_ignore));
         m.insert("zwnj", Box::new(control_word_ignore));
+        // Referenced by the spec as "old-style escaped quotation marks", but not formally
+        // recognized in the tables of symbols
+        m.insert("\"", Box::new(control_symbol_write_ansi_char));
         // Not official control symbols, but the spec says to make allowances for them
         m.insert("\n", Box::new(control_symbol_write_ansi_char));
         m.insert("\r", Box::new(control_symbol_write_ansi_char));
         m.insert("\t", Box::new(control_symbol_write_ansi_char));
+        m.insert(" ", Box::new(control_symbol_write_ansi_char));
+        // Not defined anywhere, but I've seen it used
+        m.insert("/", Box::new(control_symbol_write_ansi_char));
         m
     };
 
@@ -1254,6 +1270,13 @@ lazy_static! {
         m.insert("xmlsdttrow", Box::new(control_value_set_state_default));
         m.insert("xmlsdttunknown", Box::new(control_value_set_state_default));
         m.insert("yxe", Box::new(control_value_set_state_default));
+        // This appears to be an unofficial flag used by WordML
+        m.insert("outdisponlyhtml", Box::new(control_value_set_state_default));
+        // These are unofficial flags used by the macOS CocoaRTF export filter
+        // https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/AttributedStrings/Tasks/RTFAndAttrStrings.html
+        m.insert("glnam", Box::new(control_value_set_state_default));
+        m.insert("pardirnatural", Box::new(control_value_set_state_default));
+        m.insert("qnatural", Box::new(control_value_set_state_default));
         m
     };
 
@@ -1304,7 +1327,7 @@ lazy_static! {
         m.insert("scaps", Box::new(control_value_set_state_default));
         m.insert("shad", Box::new(control_value_set_state_default));
         m.insert("strike", Box::new(control_value_set_state_default));
-        m.insert("striked1", Box::new(control_value_set_state_default));
+        m.insert("striked", Box::new(control_value_set_state_default));
         m.insert("trautofit", Box::new(control_value_set_state_default));
         m.insert("ul", Box::new(control_value_set_state_default));
         m.insert("uldash", Box::new(control_value_set_state_default));
@@ -1324,6 +1347,9 @@ lazy_static! {
         m.insert("ululdbwave", Box::new(control_value_set_state_default));
         m.insert("ulwave", Box::new(control_value_set_state_default));
         m.insert("v", Box::new(control_value_set_state_default));
+        // These are unofficial toggles used by OpenOffice RTF export filter
+        m.insert("hyphmax", Box::new(control_value_set_state_default));
+        m.insert("pgdscnxt", Box::new(control_value_set_state_default));
         m
     };
 
@@ -1596,7 +1622,12 @@ lazy_static! {
         m.insert("mcSp", Box::new(control_value_set_state_default));
         m.insert("mdefJc", Box::new(control_value_set_state_default));
         m.insert("mdiffSty", Box::new(control_value_set_state_default));
+        // Microsoft's Tom Jebo confirmed that mdispdef in the spec document is a typo and it
+        // should be mdispDef, but that they would not be fixing it
+        // So we'll support both
+        // https://qa.social.msdn.microsoft.com/Forums/en-US/7772c72e-45b2-4ee2-aa4d-3fe8e5753811/rtf-191-mdispdef-control-word?forum=os_specifications
         m.insert("mdispdef", Box::new(control_value_set_state_default));
+        m.insert("mdispDef", Box::new(control_value_set_state_default));
         m.insert("min", Box::new(control_value_set_state_default));
         m.insert("minterSp", Box::new(control_value_set_state_default));
         m.insert("mintLim", Box::new(control_value_set_state_default));
@@ -1853,6 +1884,37 @@ lazy_static! {
         m.insert("xmlns", Box::new(control_value_set_state_default));
         m.insert("yr", Box::new(control_value_set_state_default));
         m.insert("yts", Box::new(control_value_set_state_default));
+        // These are unofficial values used by the macOS CocoaRTF export filter
+        // https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/AttributedStrings/Tasks/RTFAndAttrStrings.html
+        m.insert("AppleTypeServicesU", Box::new(control_value_set_state_default));
+        m.insert("CocoaLigature", Box::new(control_value_set_state_default));
+        m.insert("cocoartf", Box::new(control_value_set_state_default));
+        m.insert("cocoasubrtf", Box::new(control_value_set_state_default));
+        m.insert("expansion", Box::new(control_value_set_state_default));
+        m.insert("fsmilli", Box::new(control_value_set_state_default));
+        m.insert("glcol", Box::new(control_value_set_state_default));
+        m.insert("obliqueness", Box::new(control_value_set_state_default));
+        m.insert("pardeftab", Box::new(control_value_set_state_default));
+        m.insert("readonlydoc", Box::new(control_value_set_state_default));
+        m.insert("shadr", Box::new(control_value_set_state_default));
+        m.insert("shadx", Box::new(control_value_set_state_default));
+        m.insert("shady", Box::new(control_value_set_state_default));
+        m.insert("slleading", Box::new(control_value_set_state_default));
+        m.insert("slmaximum", Box::new(control_value_set_state_default));
+        m.insert("slminimum", Box::new(control_value_set_state_default));
+        m.insert("strikec", Box::new(control_value_set_state_default));
+        m.insert("strikestyle", Box::new(control_value_set_state_default));
+        m.insert("strokec", Box::new(control_value_set_state_default));
+        m.insert("strokewidth", Box::new(control_value_set_state_default));
+        m.insert("ulstyle", Box::new(control_value_set_state_default));
+        m.insert("viewh", Box::new(control_value_set_state_default));
+        m.insert("vieww", Box::new(control_value_set_state_default));
+        m.insert("width", Box::new(control_value_set_state_default));
+        m.insert("height", Box::new(control_value_set_state_default));
+        // These are unofficial values used by OpenOffice RTF export filter
+        m.insert("hyphlead", Box::new(control_value_set_state_default));
+        m.insert("hyphtrail", Box::new(control_value_set_state_default));
+        m.insert("pgdscuse", Box::new(control_value_set_state_default));
         m
     };
 }
@@ -1924,6 +1986,7 @@ fn control_symbol_write_ansi_char(state: &mut GroupState, name: &str, arg: Optio
             debug!("control symbol: ansi byte {:?}", arg_byte);
             Some(&arg_byte) // ANSI hex escape
         }
+        "\"" => Some(b"\""), // Referenced, but not formally defined mapping in spec
         "\\" => Some(b"\\"),
         "_" => Some(b"-"), // Non-breaking hyphen
         "{" => Some(b"{"),
@@ -1949,6 +2012,8 @@ fn control_symbol_write_ansi_char(state: &mut GroupState, name: &str, arg: Optio
         "\n" => Some(b"\n"),    // Semi-official compatibility mapping, same as \par
         "\r" => Some(b"\n"),    // Semi-official compatibility mapping, same as \par
         "\t" => Some(b"\t"),    // Semi-official compatibility mapping
+        " " => Some(b" "),    // Semi-official compatibility mapping
+        "/" => Some(b"/"),    // Unsupported, but used symbol mapping
         _ => {
             error!("Unsupported ANSI char mapping requested: {}", name);
             None

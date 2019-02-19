@@ -182,9 +182,10 @@ impl DocumentState {
             if let Some(symbol_handler) = rtf_control::SYMBOLS.get(sym_str) {
                 symbol_handler(&mut group_state, sym_str, None);
             } else if word_is_optional {
-                warn!("Skipping optional unsupported control word \\{}", symbol);
+                info!("Skipping optional unsupported control word \\{}", symbol);
             } else {
-                error!("Unsupported/illegal control symbol \\{}", symbol);
+                warn!("Unsupported/illegal control symbol \\{} (writing to document anyway)", symbol);
+                self.write_to_current_destination(format!("{}", symbol).as_bytes());
             }
         } else {
             error!(
