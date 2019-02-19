@@ -46,7 +46,6 @@ pub struct GroupState {
     destinations: Rc<RefCell<HashMap<String, Destination>>>,
     cur_destination: Option<String>,
     dest_encoding: Option<&'static encoding_rs::Encoding>,
-    flags: HashMap<String, bool>,
     values: HashMap<String, Option<i32>>,
     opt_ignore_next_control: bool,
 }
@@ -57,14 +56,21 @@ impl GroupState {
             destinations,
             cur_destination: None,
             dest_encoding: None,
-            flags: HashMap::new(),
             values: HashMap::new(),
             opt_ignore_next_control: false,
         }
     }
 
-    pub fn set_encoding(&mut self, cp: u16) {
+    pub fn set_codepage(&mut self, cp: u16) {
         self.dest_encoding = codepage::to_encoding(cp);
+    }
+
+    pub fn get_encoding(&mut self) -> Option<&'static encoding_rs::Encoding> {
+        self.dest_encoding
+    }
+
+    pub fn set_encoding(&mut self, encoding: Option<&'static encoding_rs::Encoding>) {
+        self.dest_encoding = encoding;
     }
 
     pub fn set_destination(&mut self, name: &str, uses_encoding: bool) {
@@ -142,14 +148,6 @@ impl GroupState {
         let old = self.opt_ignore_next_control;
         self.opt_ignore_next_control = false;
         old
-    }
-
-    pub fn set_flag(&mut self, name: &str, state: Option<bool>) {
-        if let Some(some_state) = state {
-            self.flags.insert(name.to_string(), some_state);
-        } else {
-            self.flags.remove(&name.to_string());
-        }
     }
 
     pub fn set_value(&mut self, name: &str, value: Option<i32>) {
