@@ -246,7 +246,7 @@ impl DocumentState {
         if let Some(_group) = self.group_stack.pop() {
             // TODO: destination-folding support (tables, etc)
         } else {
-            error!("Document format error: End group count exceeds number start groups");
+            warn!("Document format error: End group count exceeds number start groups");
         }
     }
 
