@@ -7,6 +7,10 @@ It has been tested with Cocoa, WordML, and OpenOffice RTF files with a high
 degree of success.
 
 # Areas for improvement
+Asian languages are not current supported properly.  It probably also doesn't
+handle Right-To-Left languages or marks properly either.  European languages
+seem to work fine, though.
+
 Support for rtf "destinations" and for tracking control word states is poor,
 and consequently display tables, lists, and some other document structure
 formatting features aren't well supported.
