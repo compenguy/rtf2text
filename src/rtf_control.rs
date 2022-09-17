@@ -2021,7 +2021,7 @@ fn control_symbol_write_ansi_char(state: &mut GroupState, name: &str, arg: Optio
     };
 
     if let Some(bytes) = opt_bytes {
-        state.write(&bytes);
+        state.write(bytes);
     }
 }
 

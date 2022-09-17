@@ -3,12 +3,12 @@ use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::rc::Rc;
 
+use anyhow::{Context, Result};
 use log::{debug, info, warn};
 
 use rtf_grimoire::tokenizer::parse as parse_tokens;
 use rtf_grimoire::tokenizer::Token;
 
-use crate::error::{Error, ErrorKind, Result};
 use crate::rtf_control;
 
 #[derive(Clone)]
@@ -21,7 +21,7 @@ impl Destination {
     fn as_bytes(&self) -> &[u8] {
         match self {
             Destination::Text(text) => text.as_bytes(),
-            Destination::Bytes(bytes) => &bytes,
+            Destination::Bytes(bytes) => bytes,
         }
     }
 
@@ -116,7 +116,7 @@ impl GroupState {
 
     pub fn write(&mut self, bytes: &[u8]) {
         let dest_name = match self.get_destination_name() {
-            Some(name) => name.clone(),
+            Some(name) => name,
             None => {
                 warn!(
                     "Document format error: Document text found outside of any document group: '{:?}'",
@@ -180,9 +180,9 @@ impl DocumentState {
     fn do_control_symbol(&mut self, symbol: char, word_is_optional: bool) {
         let mut sym_bytes = [0; 4];
         let sym_str = symbol.encode_utf8(&mut sym_bytes);
-        if let Some(mut group_state) = self.get_last_group_mut() {
+        if let Some(group_state) = self.get_last_group_mut() {
             if let Some(symbol_handler) = rtf_control::SYMBOLS.get(sym_str) {
-                symbol_handler(&mut group_state, sym_str, None);
+                symbol_handler(group_state, sym_str, None);
             } else if word_is_optional {
                 info!("Skipping optional unsupported control word \\{}", symbol);
             } else {
@@ -201,17 +201,17 @@ impl DocumentState {
     }
 
     fn do_control_word(&mut self, name: &str, arg: Option<i32>, word_is_optional: bool) {
-        if let Some(mut group_state) = self.get_last_group_mut() {
+        if let Some(group_state) = self.get_last_group_mut() {
             if let Some(dest_handler) = rtf_control::DESTINATIONS.get(name) {
-                dest_handler(&mut group_state, name, arg);
+                dest_handler(group_state, name, arg);
             } else if let Some(symbol_handler) = rtf_control::SYMBOLS.get(name) {
-                symbol_handler(&mut group_state, name, arg);
+                symbol_handler(group_state, name, arg);
             } else if let Some(value_handler) = rtf_control::VALUES.get(name) {
-                value_handler(&mut group_state, name, arg);
+                value_handler(group_state, name, arg);
             } else if let Some(flag_handler) = rtf_control::FLAGS.get(name) {
-                flag_handler(&mut group_state, name, arg);
+                flag_handler(group_state, name, arg);
             } else if let Some(toggle_handler) = rtf_control::TOGGLES.get(name) {
-                toggle_handler(&mut group_state, name, arg);
+                toggle_handler(group_state, name, arg);
             } else if word_is_optional {
                 warn!("Skipping optional unsupported control word \\{}", name);
             } else {
@@ -287,10 +287,10 @@ pub fn tokenize<R: Read>(mut reader: R) -> Result<Vec<Token>> {
     debug!("Reading all data from input.");
     reader
         .read_to_end(&mut data)
-        .map_err(Error::from_input_error)?;
+        .with_context(|| "Error reading from input file")?;
 
     debug!("Parsing into token stream.");
-    parse_tokens(&data).map_err(|e| Error::new(ErrorKind::Parse, None, Some(Box::new(e))))
+    parse_tokens(&data).with_context(|| "Error parsing RTF tokens")
 }
 
 pub fn write_plaintext<W: Write>(token_stream: &[Token], mut writer: W) -> Result<()> {
@@ -306,7 +306,7 @@ pub fn write_plaintext<W: Write>(token_stream: &[Token], mut writer: W) -> Resul
         debug!("Writing rtf1 content...");
         writer
             .write(dest.as_bytes())
-            .map_err(Error::from_output_error)?;
+            .with_context(|| "Error writing to output file")?;
     }
     Ok(())
 }
