@@ -1,10 +1,12 @@
-use crate::rtftotext::GroupState;
-
 use std::collections::HashMap;
+
+use log::{debug, error, trace};
+
+use crate::rtftotext::GroupState;
 
 type StateHandler = dyn Fn(&mut GroupState, &str, Option<i32>) + 'static + Sync;
 
-lazy_static! {
+lazy_static::lazy_static! {
     // The values for these tables are draw from the Word 2007 RTF Spec (1.9.1)
     // Typically the easiest way to deal with these is to copy/paste the table
     // into a spreadsheet, and filter on the "type" column
@@ -1927,22 +1929,22 @@ fn control_flag_set_state_encoding(state: &mut GroupState, name: &str, arg: Opti
             // is supposed to be followed up by a codepage.  I think in the absence
             // of a specific codepage, it should default to 1252 (Western European)
             state.set_codepage(1252u16)
-        },
+        }
         "pc" => {
             // IBM PC codepage 437
             state.set_codepage(437u16)
-        },
+        }
         "pca" => {
             // IBM PC codepage 850
             state.set_codepage(850u16)
-        },
+        }
         "mac" => {
             // encoding_rs suggests that the "macintosh" encoding equates to codepage 10000
             state.set_codepage(10000u16)
-        },
+        }
         _ => {
             panic!("Programmer error: {} was indicated as an encoding-related control flag, without adding an encoding mapping for it.", name)
-        },
+        }
     }
     state.set_value(name, arg);
 }
@@ -1953,12 +1955,10 @@ fn control_value_set_state_default(state: &mut GroupState, name: &str, arg: Opti
 
 fn control_value_set_state_encoding(state: &mut GroupState, name: &str, arg: Option<i32>) {
     match name {
-        "ansicpg" => {
-            state.set_codepage(arg.unwrap_or(1252i32) as u16)
-        },
+        "ansicpg" => state.set_codepage(arg.unwrap_or(1252i32) as u16),
         _ => {
             panic!("Programmer error: {} was indicated as an encoding-related control value, without adding an encoding mapping for it.", name)
-        },
+        }
     }
 
     state.set_value(name, arg);

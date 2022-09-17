@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::rc::Rc;
 
+use log::{debug, info, warn};
+
 use rtf_grimoire::tokenizer::parse as parse_tokens;
 use rtf_grimoire::tokenizer::Token;
 

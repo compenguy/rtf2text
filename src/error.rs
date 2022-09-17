@@ -47,7 +47,7 @@ impl std::fmt::Debug for ErrorKind {
 pub struct Error {
     kind: ErrorKind,
     message: Option<String>,
-    inner: Option<Box<std::error::Error>>,
+    inner: Option<Box<dyn std::error::Error>>,
 }
 
 impl std::error::Error for Error {
@@ -72,7 +72,7 @@ impl Error {
     pub fn new(
         kind: ErrorKind,
         message: Option<String>,
-        source: Option<Box<std::error::Error>>,
+        source: Option<Box<dyn std::error::Error>>,
     ) -> Self {
         Self {
             kind,

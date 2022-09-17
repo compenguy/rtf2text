@@ -1,37 +1,32 @@
-#[macro_use]
-extern crate log;
+use std::error::Error;
+use std::{fs, io, path};
 
-#[macro_use]
-extern crate lazy_static;
-
-#[macro_use]
-extern crate clap;
+use log::{debug, error};
 
 mod error;
 mod rtf_control;
 mod rtftotext;
 
-use std::error::Error;
-use std::{fs, io, path};
-
 fn main() {
-    let app = app_from_crate!("")
+    let app = clap::command!("")
         .setting(clap::AppSettings::ColorAuto)
         .setting(clap::AppSettings::ColoredHelp)
         .arg(clap::Arg::with_name("input-file")
             .help("Filename of Rich Text File to convert to text, or leave unset to read from stdin")
-            .short("i")
+            .short('i')
             .long("input-file")
             .takes_value(true)
+            .required(true)
             .value_name("INPUT-FILE"))
         .arg(clap::Arg::with_name("output-file")
             .help("Filename write the extracted text to, or leave unset to print to stdout")
-            .short("o")
+            .short('o')
             .long("output-file")
             .takes_value(true)
+            .required(true)
             .value_name("OUTPUT-FILE"))
         .arg(clap::Arg::with_name("debug")
-            .short("g")
+            .short('g')
             .long("debug")
             .multiple(true)
             .hidden(true)
@@ -41,16 +36,7 @@ fn main() {
 
     loggerv::init_with_verbosity(matches.occurrences_of("debug")).unwrap();
 
-    debug!("{} version {}", crate_name!(), crate_version!());
-
-    if matches
-        .value_of("input-file")
-        .or_else(|| matches.value_of("output-file"))
-        .is_none()
-    {
-        eprintln!("{}", matches.usage());
-        std::process::exit(255);
-    }
+    debug!("{} version {}", clap::crate_name!(), clap::crate_version!());
 
     if let Err(e) = convert(
         matches.value_of("input-file"),
@@ -64,7 +50,7 @@ fn main() {
     }
 }
 
-fn make_input_reader(infile: Option<&str>) -> error::Result<io::BufReader<Box<io::Read>>> {
+fn make_input_reader(infile: Option<&str>) -> error::Result<io::BufReader<Box<dyn io::Read>>> {
     let inpath = infile.map(path::PathBuf::from);
     let reader = io::BufReader::new(match inpath {
         Some(path) => {
@@ -75,23 +61,23 @@ fn make_input_reader(infile: Option<&str>) -> error::Result<io::BufReader<Box<io
                 return Err(error::Error::from_input_error(e));
             } else {
                 Box::new(fs::File::open(path).map_err(error::Error::from_input_error)?)
-                    as Box<io::Read>
+                    as Box<dyn io::Read>
             }
         }
-        None => Box::new(io::stdin()) as Box<io::Read>,
+        None => Box::new(io::stdin()) as Box<dyn io::Read>,
     });
     Ok(reader)
 }
 
-fn make_output_writer(outfile: Option<&str>) -> error::Result<io::BufWriter<Box<io::Write>>> {
+fn make_output_writer(outfile: Option<&str>) -> error::Result<io::BufWriter<Box<dyn io::Write>>> {
     let outpath = outfile.map(path::PathBuf::from);
     let writer = io::BufWriter::new(match outpath {
         Some(path) => {
             debug!("Opening {} for write...", path.to_str().unwrap_or(""));
             Box::new(fs::File::create(path).map_err(error::Error::from_output_error)?)
-                as Box<io::Write>
+                as Box<dyn io::Write>
         }
-        None => Box::new(io::stdout()) as Box<io::Write>,
+        None => Box::new(io::stdout()) as Box<dyn io::Write>,
     });
     Ok(writer)
 }
