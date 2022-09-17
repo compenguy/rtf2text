@@ -16,20 +16,18 @@ fn main() -> Result<()> {
             .short('i')
             .long("input-file")
             .takes_value(true)
-            .required(true)
             .value_name("INPUT-FILE"))
         .arg(clap::Arg::with_name("output-file")
             .help("Filename write the extracted text to, or leave unset to print to stdout")
             .short('o')
             .long("output-file")
             .takes_value(true)
-            .required(true)
             .value_name("OUTPUT-FILE"))
         .arg(clap::Arg::with_name("debug")
             .short('g')
             .long("debug")
-            .multiple(true)
-            .hidden(true)
+            .multiple_occurrences(true)
+            .hide(true)
             .help("Enable debug-level output"));
 
     let matches = app.get_matches();

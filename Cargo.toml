@@ -7,7 +7,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1"
 log = "0.4"
-flexi_logger = "0.23"
+flexi_logger = { version = "0.23", default-features = false, features = [ "textfilter" ] }
 lazy_static = "1"
 clap = { version = "3", default-features = false, features = [ "std", "cargo" ] }
 rtf-grimoire = { git = "https://github.com/compenguy/rtf-grimoire.git" }
