@@ -2,6 +2,9 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::rc::Rc;
+use std::borrow::{Cow, ToOwned};
+
+use log::{debug, info, warn};
 
 use log::{debug, info, warn};
 
@@ -42,25 +45,22 @@ impl Destination {
     }
 }
 
-/* TODO: It would be better to make 'values' CoW objects to reduce the number of copies we
- * make/keep
- */
 #[derive(Clone)]
-pub struct GroupState {
+pub struct GroupState<'g, ValueMap> where ValueMap: ToOwned<Owned=HashMap<String, Option<i32>>> + 'g {
     destinations: Rc<RefCell<HashMap<String, Destination>>>,
     cur_destination: Option<String>,
     dest_encoding: Option<&'static encoding_rs::Encoding>,
-    values: HashMap<String, Option<i32>>,
+    values: Cow<'g, ValueMap>,
     opt_ignore_next_control: bool,
 }
 
-impl GroupState {
+impl<'g, X: Clone + 'g> GroupState<'g, X> where X: ToOwned<Owned=HashMap<String, Option<i32>>> {
     pub fn new(destinations: Rc<RefCell<HashMap<String, Destination>>>) -> Self {
         Self {
             destinations,
             cur_destination: None,
             dest_encoding: None,
-            values: HashMap::new(),
+            values: Cow::from(HashMap::new()),
             opt_ignore_next_control: false,
         }
     }
@@ -160,12 +160,12 @@ impl GroupState {
 }
 
 #[derive(Clone)]
-struct DocumentState {
+struct DocumentState<'g, X> {
     destinations: Rc<RefCell<HashMap<String, Destination>>>,
-    group_stack: Vec<GroupState>,
+    group_stack: Vec<GroupState<'g, X>>,
 }
 
-impl DocumentState {
+impl<'g> DocumentState<'g> {
     fn new() -> Self {
         Self {
             destinations: Rc::new(RefCell::new(HashMap::new())),

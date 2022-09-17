@@ -6,8 +6,8 @@ edition = "2018"
 
 [dependencies]
 log = "0.4"
-loggerv = "0.7.0"
-lazy_static = "1.4"
+loggerv = "0.7"
+lazy_static = "1"
 clap = { version = "3", default-features = false, features = [ "std", "cargo" ] }
 rtf-grimoire = { git = "https://github.com/compenguy/rtf-grimoire.git" }
 codepage = "0.1"

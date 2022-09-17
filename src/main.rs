@@ -1,6 +1,5 @@
 use std::error::Error;
 use std::{fs, io, path};
-
 use log::{debug, error};
 
 mod error;
