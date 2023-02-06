@@ -50,7 +50,7 @@ fn main() -> Result<()> {
         clap::crate_name!(),
         crate_log_level
     );
-    Logger::try_with_str(&spec)?
+    Logger::try_with_str(spec)?
         .format(detailed_format)
         .start()
         .with_context(|| "Error starting logger")?;

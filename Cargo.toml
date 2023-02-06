@@ -10,6 +10,6 @@ log = "0.4"
 flexi_logger = { version = "0.23", default-features = false, features = [ "textfilter" ] }
 lazy_static = "1"
 clap = { version = "3", default-features = false, features = [ "std", "cargo" ] }
-rtf-grimoire = { git = "https://github.com/compenguy/rtf-grimoire.git" }
+rtf-grimoire = "0.2"
 codepage = "0.1"
 encoding_rs = "0.8"

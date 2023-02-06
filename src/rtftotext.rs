@@ -6,7 +6,7 @@ use std::rc::Rc;
 use anyhow::{Context, Result};
 use log::{debug, info, warn};
 
-use rtf_grimoire::tokenizer::parse as parse_tokens;
+use rtf_grimoire::tokenizer::parse_finished as parse_tokens;
 use rtf_grimoire::tokenizer::Token;
 
 use crate::rtf_control;
@@ -190,7 +190,7 @@ impl DocumentState {
                     "Unsupported/illegal control symbol \\{} (writing to document anyway)",
                     symbol
                 );
-                self.write_to_current_destination(format!("{}", symbol).as_bytes());
+                self.write_to_current_destination(format!("{symbol}").as_bytes());
             }
         } else {
             warn!(
@@ -287,10 +287,10 @@ pub fn tokenize<R: Read>(mut reader: R) -> Result<Vec<Token>> {
     debug!("Reading all data from input.");
     reader
         .read_to_end(&mut data)
-        .with_context(|| "Error reading from input file")?;
+        .context("Error reading from input file")?;
 
     debug!("Parsing into token stream.");
-    parse_tokens(&data).with_context(|| "Error parsing RTF tokens")
+    parse_tokens(&data).map_err(|e| anyhow::anyhow!("Error parsing RTF tokens: {}", e))
 }
 
 pub fn write_plaintext<W: Write>(token_stream: &[Token], mut writer: W) -> Result<()> {
@@ -306,7 +306,7 @@ pub fn write_plaintext<W: Write>(token_stream: &[Token], mut writer: W) -> Resul
         debug!("Writing rtf1 content...");
         writer
             .write(dest.as_bytes())
-            .with_context(|| "Error writing to output file")?;
+            .context("Error writing to output file")?;
     }
     Ok(())
 }
